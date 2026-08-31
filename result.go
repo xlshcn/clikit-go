@@ -1,16 +1,22 @@
 package clikit
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io"
+	"slices"
 	"strings"
 
 	"github.com/spf13/cobra"
 )
 
-// JSONFlag is the persistent flag name [App] installs to switch a command tree
-// into machine-readable mode.
+// JSONFlag is the default persistent flag name [App] installs to switch a
+// command tree into machine-readable mode.
 const JSONFlag = "json"
+
+type jsonFlagContextKey struct{}
 
 // Envelope is the single shape every --json response takes, success or
 // failure, so callers can branch on one field.
@@ -26,7 +32,8 @@ type Envelope struct {
 // envelope to the command's stdout; otherwise it does nothing, on the
 // assumption that the command already printed for humans.
 //
-// It always returns nil, so a RunE can end with `return clikit.Emit(cmd, data)`.
+// A RunE can end with `return clikit.Emit(cmd, data)` so encoding errors are
+// not discarded.
 func Emit(cmd *cobra.Command, data any, meta ...map[string]any) error {
 	if !JSONRequested(cmd) {
 		return nil
@@ -42,11 +49,37 @@ func Emit(cmd *cobra.Command, data any, meta ...map[string]any) error {
 // JSONRequested reports whether the caller asked for machine-readable output.
 // Commands should consult it before printing anything decorative.
 func JSONRequested(cmd *cobra.Command) bool {
-	flag := cmd.Flags().Lookup(JSONFlag)
+	name := JSONFlag
+	if configured, ok := cmd.Context().Value(jsonFlagContextKey{}).(string); ok {
+		name = configured
+	}
+	flag := cmd.Flags().Lookup(name)
 	if flag == nil {
 		return false
 	}
 	return flag.Value.String() == "true"
+}
+
+func validateSuccessEnvelope(payload []byte, path []string) error {
+	decoder := json.NewDecoder(bytes.NewReader(payload))
+	var envelope Envelope
+	if err := decoder.Decode(&envelope); err != nil {
+		if errors.Is(err, io.EOF) {
+			return errors.New("command completed without calling Emit")
+		}
+		return fmt.Errorf("stdout is not an envelope: %w", err)
+	}
+	if !envelope.OK || envelope.Meta == nil || !slices.Equal(envelope.Command, path) {
+		return errors.New("stdout is not a success envelope for this command")
+	}
+	var extra any
+	if err := decoder.Decode(&extra); !errors.Is(err, io.EOF) {
+		if err == nil {
+			return errors.New("command emitted more than one JSON document")
+		}
+		return fmt.Errorf("stdout contains trailing non-JSON content: %w", err)
+	}
+	return nil
 }
 
 func errorEnvelope(path []string, err error) Envelope {

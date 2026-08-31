@@ -6,6 +6,29 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-08-31
+
+### Fixed
+
+- Enforce exactly one validated envelope on stdout for every JSON execution;
+  missing, duplicate, or polluted success output now becomes a contract error.
+- Classify wrapped positional validators, required flags, and flag groups as
+  usage errors with exit code 2.
+- Handle repeated JSON booleans, combined shorthand flags, `--`, invalid JSON
+  values, and existing `-j` flags without selecting the wrong output mode or
+  panicking.
+- Preserve JSON help across repeated executions and return JSON version output
+  as an envelope.
+
+### Changed
+
+- JSON success, failure, help, and version envelopes now all use stdout;
+  stderr is reserved for diagnostics.
+- Added `WithJSONFlag` to configure the JSON flag name and shorthand, and
+  `UsageArgs` to adapt Cobra positional validators.
+
+## [0.1.1] - 2026-08-31
+
 ### Fixed
 
 - CI: run every matrix step under bash. Windows runners default to PowerShell,
@@ -36,5 +59,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - A license audit test that fails the build if any dependency compiled into a
   user binary, on any supported platform, stops being permissively licensed.
 
-[Unreleased]: https://github.com/xlshcn/clikit-go/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/xlshcn/clikit-go/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/xlshcn/clikit-go/compare/v0.1.1...v0.1.2
+[0.1.1]: https://github.com/xlshcn/clikit-go/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/xlshcn/clikit-go/releases/tag/v0.1.0

@@ -2,10 +2,12 @@ package clikit
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 
 	"charm.land/huh/v2"
+	"github.com/spf13/cobra"
 )
 
 // Exit codes. They follow the common shell convention: 0 success, 1 runtime
@@ -52,6 +54,17 @@ func Usagef(format string, args ...any) *Error {
 	return &Error{Kind: "usage_error", Message: fmt.Sprintf(format, args...), Code: ExitUsage}
 }
 
+// UsageArgs adapts a cobra positional-argument validator so validation
+// failures use the same usage_error and exit code 2 as flag parse failures.
+func UsageArgs(validate cobra.PositionalArgs) cobra.PositionalArgs {
+	return func(cmd *cobra.Command, args []string) error {
+		if err := validate(cmd, args); err != nil {
+			return asUsageError(cmd, err)
+		}
+		return nil
+	}
+}
+
 // Failf reports that the command ran but could not complete. Exits 1.
 func Failf(format string, args ...any) *Error {
 	return &Error{Kind: "execution_error", Message: fmt.Sprintf(format, args...), Code: ExitFailure}
@@ -82,6 +95,9 @@ func errorPayload(err error) map[string]any {
 		payload["message"] = cmdErr.Message
 		for key, value := range cmdErr.Details {
 			if value != nil {
+				if _, err := json.Marshal(value); err != nil {
+					continue
+				}
 				payload[key] = value
 			}
 		}

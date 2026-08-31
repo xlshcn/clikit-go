@@ -151,6 +151,7 @@ app.Run(ctx)
 | `WithVersion(string)` | Sets the string `--version` reports. Empty disables the flag. |
 | `WithArgs(...string)` | Replaces `os.Args[1:]`. For tests and embedding. |
 | `WithOutput(out, err)` | Redirects the application's stdout and stderr. |
+| `WithJSONFlag(name, shorthand)` | Changes `--json` and `-j`; an empty shorthand disables the short form. |
 | `WithFang(...fang.Option)` | Passes through to fang: theming, signals, disabling the generated manpage or completions. |
 
 `BuildVersion` reports whatever Go embedded in the binary — a real module
@@ -162,8 +163,8 @@ linker-supplied version when your build sets one.
 
 `Emit` is the only call a command needs to become machine-readable. In `--json`
 mode it writes the success envelope to stdout; otherwise it does nothing, on the
-assumption that the command already printed for humans. It always returns `nil`,
-so a `RunE` can end with it:
+assumption that the command already printed for humans. A `RunE` can return it
+directly so encoding errors are not discarded:
 
 ```go
 return clikit.Emit(cmd, results)
@@ -182,6 +183,12 @@ Every response — success, failure, help — has one shape:
 {"ok": false, "command": ["prompts", "import"], "error": {...}, "meta": {}}
 ```
 
+All envelopes use stdout; stderr remains available for diagnostics. In JSON
+mode `App` buffers command stdout and publishes it only after validating that it
+contains exactly one success envelope for the executed command. Missing or
+repeated `Emit` calls, or raw text mixed into stdout, become a single
+`execution_error` envelope and exit `1`.
+
 `command` is the path with the program name stripped, so a consumer reads
 `["prompts","import"]` rather than `["mycli","prompts","import"]`.
 
@@ -199,6 +206,13 @@ if !clikit.JSONRequested(cmd) {
 ```go
 return clikit.Usagef("--since must be before --until")     // exit 2
 return clikit.Failf("upload failed").With("bundle", name)  // exit 1
+```
+
+Wrap Cobra's positional validators so they share the same usage semantics;
+required flags and flag-group validation are classified automatically:
+
+```go
+Args: clikit.UsageArgs(cobra.ExactArgs(1)),
 ```
 
 `Usagef` means "you typed it wrong", `Failf` means "it ran and could not
@@ -318,7 +332,7 @@ code := clikit.New(root,
 ).Execute(context.Background())
 
 if code != clikit.ExitOK {
-	t.Fatalf("exit %d: %s", code, errOut.String())
+	t.Fatalf("exit %d: %s", code, out.String())
 }
 ```
 
@@ -329,9 +343,9 @@ styled output.
 
 | | |
 | --- | --- |
-| **Application** | `New`, `App.Run`, `App.Execute`, `WithVersion`, `WithArgs`, `WithOutput`, `WithFang`, `BuildVersion` |
+| **Application** | `New`, `App.Run`, `App.Execute`, `WithVersion`, `WithArgs`, `WithOutput`, `WithJSONFlag`, `WithFang`, `BuildVersion` |
 | **Output** | `Emit`, `JSONRequested`, `Envelope`, `Schema`, `JSONFlag` |
-| **Errors** | `Usagef`, `Failf`, `Error.With`, `Error.Wrap`, `ExitCode`, `ExitOK`, `ExitFailure`, `ExitUsage`, `ExitAbort` |
+| **Errors** | `Usagef`, `UsageArgs`, `Failf`, `Error.With`, `Error.Wrap`, `ExitCode`, `ExitOK`, `ExitFailure`, `ExitUsage`, `ExitAbort` |
 | **Console** | `NewConsole`, `NewStderrConsole`, `Console`, `Pair` |
 | **Spinner** | `Wait`, `NewSpinner`, `Spinner`, `SpinnerOutput`, `SpinnerConsole`, `SpinnerEnabled`, `SpinnerInterval` |
 | **Prompts** | `Confirm`, `Ask`, `AskPassword`, `Choose`, `Interactive` |
