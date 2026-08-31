@@ -373,11 +373,21 @@ anything copyleft or unrecognised.
 
 ## Prior art
 
-clikit-go is a Go port of an internal Python `clikit`, at roughly half the size.
-Where the Go ecosystem already had a good answer it uses it rather than
-reimplementing: cobra for the command tree, fang for styled help, lipgloss for
-styling and tables, huh for prompts. What remains is the part none of them
-cover.
+clikit-go is a Go port of an internal, unpublished Python `clikit`, at roughly
+half the size. Where the Go ecosystem already had a good answer it uses it
+rather than reimplementing: cobra for the command tree, fang for styled help,
+lipgloss for styling and tables, huh for prompts. What remains is the part none
+of them cover.
+
+**Not related to the PyPI package of the same name.**
+[`clikit`](https://pypi.org/project/clikit/) on PyPI is Sébastien Eustace's
+Python CLI toolkit — a dependency of Cleo 0.8, and through it of older Poetry
+releases, though current Cleo no longer uses it and its last release was in
+2020. The names collide and the one-line descriptions read alike, but this
+project is not a port of it, shares no code or API with it, and is not
+affiliated with it. The `-go` suffix here is the usual Go answer to a name
+already in use elsewhere, which is also why the import path ends in
+`clikit-go` while the package is `clikit`.
 
 ## Contributing
 
