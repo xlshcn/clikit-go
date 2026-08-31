@@ -6,6 +6,18 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- CI: run every matrix step under bash. Windows runners default to PowerShell,
+  which split `-coverprofile=coverage.out` at the dot and made `go test` look
+  for a package named `.out`. The tests themselves were passing.
+
+### Changed
+
+- Bumped `spf13/pflag` to v1.0.10 and the GitHub Actions to current majors.
+
+## [0.1.0] - 2026-08-31
+
 ### Added
 
 - `App` — a thin runner over a cobra command tree, owning argv, the `--json`
@@ -24,4 +36,5 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - A license audit test that fails the build if any dependency compiled into a
   user binary, on any supported platform, stops being permissively licensed.
 
-[Unreleased]: https://github.com/xlshcn/clikit-go/compare/main...HEAD
+[Unreleased]: https://github.com/xlshcn/clikit-go/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/xlshcn/clikit-go/releases/tag/v0.1.0
