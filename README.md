@@ -100,11 +100,8 @@ func main() {
 ```
 
 The import path ends in `clikit-go` but the package is named `clikit`, so calls
-read `clikit.New(...)`. Add an explicit alias if your linter prefers it:
-
-```go
-import clikit "github.com/xlshcn/clikit-go"
-```
+read `clikit.New(...)`. No import alias is needed — Go takes the identifier from
+the package clause, not the path — and `goimports` resolves it for you.
 
 That one program serves both audiences. For a person:
 
